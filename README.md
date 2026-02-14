@@ -1,10 +1,10 @@
 # ChatPharo
 
-[![Pharo 13 & 14](https://img.shields.io/badge/Pharo-13%20%7C%2014-2c98f0.svg)](https://github.com/omarabedelkader/ChatPharo)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/omarabedelkader/ChatPharo/blob/master/LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/omarabedelkader/ChatPharo/pulls)
-[![Status: Active](https://img.shields.io/badge/status-active-success.svg)](https://github.com/omarabedelkader/ChatPharo)
-[![CI](https://github.com/omarabedelkader/ChatPharo/actions/workflows/CI.yml/badge.svg)](https://github.com/omarabedelkader/ChatPharo/actions/workflows/CI.yml)
+[![Pharo 13 & 14](https://img.shields.io/badge/Pharo-13%20%7C%2014-2c98f0.svg)](https://github.com/pharo-llm/chatpharo)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/pharo-llm/chatpharo/blob/master/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/pharo-llm/chatpharo/pulls)
+[![Status: Active](https://img.shields.io/badge/status-active-success.svg)](https://github.com/pharo-llm/chatpharo)
+[![CI](https://github.com/pharo-llm/chatpharo/actions/workflows/CI.yml/badge.svg)](https://github.com/pharo-llm/chatpharo/actions/workflows/CI.yml)
 
 
 ChatPharo is designed to integrate AI/chat functionality into the Pharo environment. This plugin allows you to communicate with language models directly from Pharo.

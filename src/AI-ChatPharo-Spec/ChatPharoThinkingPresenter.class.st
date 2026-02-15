@@ -7,6 +7,7 @@ Class {
 		'animationProcess',
 		'currentPhase',
 		'showDetailsButton',
+		'hideButton',
 		'thinkingContent',
 		'thinkingStartedAt',
 		'thinkingElapsedSeconds',
@@ -65,10 +66,10 @@ ChatPharoThinkingPresenter >> defaultLayout [
 		          add: modelNameLabel expand: false;
 		          add: statusLabel expand: false;
 		          add: dotsLabel expand: false;
-					add: toolsLabel expand: false;
+		          add: toolsLabel expand: false;
 		          yourself.
 	self shouldShowThinkingUI ifTrue: [ layout add: showDetailsButton expand: false ].
-
+layout add: hideButton expand: false.
 	^ layout
 ]
 
@@ -89,6 +90,16 @@ ChatPharoThinkingPresenter >> formattedElapsedThinkingTime [
 			nextPutAll: ' sec (';
 			nextPutAll: totalSeconds asString;
 			nextPutAll: 's total)' ]
+]
+
+{ #category : 'initialization' }
+ChatPharoThinkingPresenter >> hideThinking [
+	| chatPresenter |
+	chatPresenter := self owner.
+	[ chatPresenter isNotNil and: [ chatPresenter class name ~= #ChatPharoChatPresenter ] ]
+		whileTrue: [ chatPresenter := chatPresenter owner ].
+
+	chatPresenter ifNotNil: [ chatPresenter hideThinking ]
 ]
 
 { #category : 'initialization' }
@@ -119,8 +130,15 @@ ChatPharoThinkingPresenter >> initializePresenters [
 		                     label: 'Show Details';
 		                     action: [ self openThinkingDetails ];
 		                     yourself.
-	
-toolsLabel := self newLabel
+
+	hideButton := self newButton
+		              label: 'Hide thinking';
+		              help: 'Hide thinking indicator';
+		              action: [ self hideThinking ];
+		              yourself.
+
+
+	toolsLabel := self newLabel
 		              label: '';
 		              yourself
 ]

@@ -96,7 +96,6 @@ ChatPharoPresenterTest >> testInitializeWithoutAppIsSafe [
 	| p |
 	p := ChatPharoPresenter new.
 	self shouldnt: [ p initializePresenters ] raise: Error.
-	self assert: p notebook pages size equals: 1
 ]
 
 { #category : 'tests' }

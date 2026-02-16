@@ -115,10 +115,12 @@ ChatPharoChatPresenter >> connectPresenters [
 					 yourself) ].
 
 
-	model whenToolExecutionDo: [
+	model whenToolExecutionDo: [:toolName |
 			thinkingPresenter phase: #executing.
+			thinkingPresenter addExecutedTool: toolName.
 			ChatPharoLogger logFrontend: 'Tool execution feedback shown' details: (Dictionary new
 					 at: 'chatId' put: model identityHash;
+					at: 'toolName' put: (toolName ifNil: [ 'unknown' ]);
 					 yourself) ].
 
 	model whenErrorReceivedDo: [ :errorMessage |

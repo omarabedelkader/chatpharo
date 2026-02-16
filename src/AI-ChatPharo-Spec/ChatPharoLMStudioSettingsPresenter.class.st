@@ -25,7 +25,6 @@ Class {
 { #category : 'initialization' }
 ChatPharoLMStudioSettingsPresenter >> connectPresenters [
 
-	modelsDrop whenSelectedItemChangedDo: [ :name | model model: name ].
 	hostInput whenTextChangedDo: [ :text | model host: text ].
 	portInput whenTextChangedDo: [ :text | model port: text ].
 	temperatureInput whenTextChangedDo: [ :text |
@@ -36,12 +35,9 @@ ChatPharoLMStudioSettingsPresenter >> connectPresenters [
 				do: [ :ex | num := model temperature ].
 			model temperature: num ].
 
-	maxTokensInput whenTextChangedDo: [ :text |
-		self updateMaxTokensFrom: text ].
-	topPInput whenTextChangedDo: [ :text |
-		self updateTopPFrom: text ].
-	customParametersInput whenTextChangedDo: [ :text |
-		self updateCustomParametersFrom: text ].
+	maxTokensInput whenTextChangedDo: [ :text | self updateMaxTokensFrom: text ].
+	topPInput whenTextChangedDo: [ :text | self updateTopPFrom: text ].
+	customParametersInput whenTextChangedDo: [ :text | self updateCustomParametersFrom: text ]
 ]
 
 { #category : 'initialization' }
@@ -117,6 +113,7 @@ ChatPharoLMStudioSettingsPresenter >> initializePresenters [
 	super initializePresenters.
 
 	modelsDrop := SpDropListPresenter new.
+	modelsDrop whenSelectedItemChangedDo: [ :m | model model: m ].
 	refreshButton := self newButton
 		                 label: 'Refresh';
 		                 icon: (self iconNamed: #refresh);
@@ -139,23 +136,19 @@ ChatPharoLMStudioSettingsPresenter >> initializePresenters [
 
 	maxTokensInput := self newTextInput
 		                  placeholder: 'e.g. 1024';
-		                  text: (model maxTokens
-			                   ifNil: [ '' ]
-			                   ifNotNil: [ model maxTokens asString ]);
+		                  text: (model maxTokens ifNil: [ '' ] ifNotNil: [ model maxTokens asString ]);
 		                  yourself.
 
 	topPInput := self newTextInput
 		             placeholder: 'e.g. 0.9';
-		             text: (model topP
-			              ifNil: [ '' ]
-			              ifNotNil: [ model topP asString ]);
+		             text: (model topP ifNil: [ '' ] ifNotNil: [ model topP asString ]);
 		             yourself.
 
 	customParametersInput := self newTextInput
 		                         placeholder: '{"frequency_penalty":0.1}';
 		                         text: (model customParameters isEmpty
-			                          ifTrue: [ '' ]
-			                          ifFalse: [ STONJSON toString: model customParameters ]);
+				                          ifTrue: [ '' ]
+				                          ifFalse: [ STONJSON toString: model customParameters ]);
 		                         yourself.
 
 	testButton := self newButton

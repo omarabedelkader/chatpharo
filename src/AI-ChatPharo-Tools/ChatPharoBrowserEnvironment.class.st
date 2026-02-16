@@ -339,6 +339,61 @@ ChatPharoBrowserEnvironment >> applyFunctionGetClassesInPackages: arguments [
 		  -> notFoundPackages asArray
 ]
 
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> applyFunctionGetMethodComment: arguments [
+	"Get the comment of a method (the first string literal in the method body)."
+
+	| className selector side theClass targetClass |
+	className := arguments at: 'class_name'.
+	selector := arguments at: 'selector'.
+	side := arguments at: 'side' ifAbsent: [ 'instance' ].
+
+	theClass := self classNamed: className.
+	theClass ifNil: [
+		^ Dictionary with: 'error' -> ('Class not found: ' , className) ].
+
+	targetClass := side = 'class'
+		ifTrue: [ theClass class ]
+		ifFalse: [ theClass ].
+
+	(targetClass includesSelector: selector asSymbol) ifFalse: [
+		^ Dictionary with: 'error' -> ('Method not found: ' , selector) ].
+
+	[
+		| method comment |
+		method := targetClass >> selector asSymbol.
+		comment := [ method comment ] on: Error do: [ :e | nil ].
+
+		^ Dictionary
+			with: 'class' -> className
+			with: 'side' -> side
+			with: 'selector' -> selector
+			with: 'comment' -> (comment ifNil: [ '' ])
+	] on: Error do: [ :error |
+		^ Dictionary with: 'error' -> ('Failed to get method comment: ' , error messageText) ]
+]
+
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> applyFunctionGetPackageComments: arguments [
+	"Get the comments of the specified packages."
+
+	| commentPerPackage notFoundPackages |
+	commentPerPackage := Dictionary new.
+	notFoundPackages := OrderedCollection new.
+
+	(arguments at: 'packages') do: [ :packageName |
+		(self packageNamed: packageName)
+			ifNotNil: [ :package |
+				commentPerPackage
+					at: packageName
+					put: ([ package comment ] on: Error do: [ :e | '' ]) ]
+			ifNil: [ notFoundPackages add: packageName ] ].
+
+	^ Dictionary
+		with: 'comment_per_package' -> commentPerPackage
+		with: 'nonexistent_or_outside_scope_packages' -> notFoundPackages asArray
+]
+
 { #category : 'initialization' }
 ChatPharoBrowserEnvironment >> applyFunctionGetPackages: arguments [
 
@@ -502,7 +557,7 @@ ChatPharoBrowserEnvironment >> applyFunctionRemoveMethod: arguments [
 		^ Dictionary with: 'error' -> ('Failed to remove method: ' , error messageText) ]
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'class-managments' }
 ChatPharoBrowserEnvironment >> applyFunctionRenameClass: arguments [
 	"Rename a single class using Pharo's modern refactoring engine."
 
@@ -540,7 +595,7 @@ ChatPharoBrowserEnvironment >> applyFunctionRenameClass: arguments [
 
 ]
 
-{ #category : 'as yet unclassified' }
+{ #category : 'class-managments' }
 ChatPharoBrowserEnvironment >> applyFunctionRenameClassesInPackage: arguments [
 	"Rename multiple classes in a package based on pattern matching."
 
@@ -685,6 +740,102 @@ ChatPharoBrowserEnvironment >> applyFunctionSetClassComment: arguments [
 			with: 'comment' -> comment
 	] on: Error do: [ :error |
 		^ Dictionary with: 'error' -> ('Failed to set class comment: ' , error messageText) ]
+]
+
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> applyFunctionSetMethodComment: arguments [
+	"Set or update the comment of a method.
+	 In Pharo, a method comment is the first string literal in the method body.
+	 This replaces (or inserts) that comment string and recompiles the method."
+
+	| className selector side comment theClass targetClass method sourceCode newSource protocol commentLiteral |
+	className := arguments at: 'class_name'.
+	selector := arguments at: 'selector'.
+	comment := arguments at: 'comment'.
+	side := arguments at: 'side' ifAbsent: [ 'instance' ].
+
+	theClass := self classNamed: className.
+	theClass ifNil: [
+		^ Dictionary with: 'error' -> ('Class not found: ' , className) ].
+
+	targetClass := side = 'class'
+		ifTrue: [ theClass class ]
+		ifFalse: [ theClass ].
+
+	(targetClass includesSelector: selector asSymbol) ifFalse: [
+		^ Dictionary with: 'error' -> ('Method not found: ' , selector) ].
+
+	[
+		| existingComment |
+		method := targetClass >> selector asSymbol.
+		sourceCode := method sourceCode.
+		protocol := method protocol.
+		existingComment := [ method comment ] on: Error do: [ :e | nil ].
+
+		"Build the new comment string literal"
+		commentLiteral := '"' , (comment copyReplaceAll: '"' with: '""') , '"'.
+
+		existingComment isNil
+			ifTrue: [
+				"No existing comment - insert after method signature line"
+				| signatureEnd bodyStart |
+				"Find the end of the first line (method signature)"
+				signatureEnd := (sourceCode indexOf: Character cr ifAbsent: [
+					sourceCode indexOf: Character lf ifAbsent: [ sourceCode size ] ]).
+				bodyStart := sourceCode copyFrom: signatureEnd + 1 to: sourceCode size.
+				newSource := (sourceCode copyFrom: 1 to: signatureEnd) ,
+					String cr , String tab , commentLiteral ,
+					bodyStart ]
+			ifFalse: [
+				"Replace existing comment"
+				| existingLiteral |
+				existingLiteral := '"' , (existingComment copyReplaceAll: '"' with: '""') , '"'.
+				(sourceCode includesSubstring: existingLiteral)
+					ifTrue: [ newSource := sourceCode copyReplaceAll: existingLiteral with: commentLiteral ]
+					ifFalse: [
+						"Fallback: insert after signature if we can't find the old comment"
+						| signatureEnd bodyStart |
+						signatureEnd := (sourceCode indexOf: Character cr ifAbsent: [
+							sourceCode indexOf: Character lf ifAbsent: [ sourceCode size ] ]).
+						bodyStart := sourceCode copyFrom: signatureEnd + 1 to: sourceCode size.
+						newSource := (sourceCode copyFrom: 1 to: signatureEnd) ,
+							String cr , String tab , commentLiteral ,
+							bodyStart ] ].
+
+		newSource := self normalizeLineEndingsToCr: newSource.
+		targetClass compile: newSource classified: protocol.
+
+		^ Dictionary
+			with: 'success' -> true
+			with: 'class' -> className
+			with: 'side' -> side
+			with: 'selector' -> selector
+			with: 'comment' -> comment
+	] on: Error do: [ :error |
+		^ Dictionary with: 'error' -> ('Failed to set method comment: ' , error messageText) ]
+]
+
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> applyFunctionSetPackageComment: arguments [
+	"Set or update the comment of a package."
+
+	| packageName comment package |
+	packageName := arguments at: 'package_name'.
+	comment := arguments at: 'comment'.
+
+	package := self packageNamed: packageName.
+	package ifNil: [
+		^ Dictionary with: 'error' -> ('Package not found: ' , packageName) ].
+
+	[
+		package comment: comment.
+
+		^ Dictionary
+			with: 'success' -> true
+			with: 'package' -> packageName
+			with: 'comment' -> comment
+	] on: Error do: [ :error |
+		^ Dictionary with: 'error' -> ('Failed to set package comment: ' , error messageText) ]
 ]
 
 { #category : 'accessing' }
@@ -1029,6 +1180,50 @@ ChatPharoBrowserEnvironment >> functionGetClassesInPackages [
 		  self applyFunctionGetClassesInPackages: arguments ]
 ]
 
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> functionGetMethodComment [
+	"Tool to get the comment of a method."
+
+	^ ChatPharoClient
+		name: 'get_method_comment'
+		description: 'Gets the comment (the first string literal in the method body) of a method.'
+		parameters: (Dictionary
+			with: 'type' -> 'object'
+			with: 'properties' -> (Dictionary
+				with: 'class_name' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The name of the class containing the method')
+				with: 'selector' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The selector of the method')
+				with: 'side' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'enum' -> #( 'instance' 'class' )
+					with: 'description' -> 'Whether this is an instance or class method (default: "instance")'))
+			with: 'required' -> #( 'class_name' 'selector' ))
+		block: [ :arguments |
+			self applyFunctionGetMethodComment: arguments ]
+]
+
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> functionGetPackageComments [
+	"Tool to get the comments of packages."
+
+	^ ChatPharoClient
+		name: 'get_package_comments'
+		description: 'Gets the comment (documentation) of each specified package.'
+		parameters: (Dictionary
+			with: 'type' -> 'object'
+			with: 'properties' -> (Dictionary
+				with: 'packages' -> (Dictionary
+					with: 'type' -> 'array'
+					with: 'items' -> (Dictionary with: 'type' -> 'string')
+					with: 'description' -> 'Names of the packages'))
+			with: 'required' -> #( 'packages' ))
+		block: [ :arguments |
+			self applyFunctionGetPackageComments: arguments ]
+]
+
 { #category : 'initialization' }
 ChatPharoBrowserEnvironment >> functionGetPackages [
 
@@ -1344,6 +1539,55 @@ ChatPharoBrowserEnvironment >> functionSetClassComment [
 			self applyFunctionSetClassComment: arguments ]
 ]
 
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> functionSetMethodComment [
+	"Tool to set or update a method comment."
+
+	^ ChatPharoClient
+		name: 'set_method_comment'
+		description: 'Sets or updates the comment of a method. In Pharo, a method comment is the first string literal in the method body (enclosed in double quotes). This will replace an existing comment or insert a new one after the method signature. This modifies the live system.'
+		parameters: (Dictionary
+			with: 'type' -> 'object'
+			with: 'properties' -> (Dictionary
+				with: 'class_name' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The name of the class containing the method')
+				with: 'selector' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The selector of the method')
+				with: 'comment' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The comment text for the method (without surrounding double quotes)')
+				with: 'side' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'enum' -> #( 'instance' 'class' )
+					with: 'description' -> 'Whether this is an instance or class method (default: "instance")'))
+			with: 'required' -> #( 'class_name' 'selector' 'comment' ))
+		block: [ :arguments |
+			self applyFunctionSetMethodComment: arguments ]
+]
+
+{ #category : 'comment-managments' }
+ChatPharoBrowserEnvironment >> functionSetPackageComment [
+	"Tool to set or update a package comment."
+
+	^ ChatPharoClient
+		name: 'set_package_comment'
+		description: 'Sets or updates the comment (documentation) of a package. This modifies the live system.'
+		parameters: (Dictionary
+			with: 'type' -> 'object'
+			with: 'properties' -> (Dictionary
+				with: 'package_name' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The name of the package to document')
+				with: 'comment' -> (Dictionary
+					with: 'type' -> 'string'
+					with: 'description' -> 'The comment text for the package'))
+			with: 'required' -> #( 'package_name' 'comment' ))
+		block: [ :arguments |
+			self applyFunctionSetPackageComment: arguments ]
+]
+
 { #category : 'initialization' }
 ChatPharoBrowserEnvironment >> initializeWithEnvironment: env [
 
@@ -1356,37 +1600,43 @@ ChatPharoBrowserEnvironment >> initializeWithEnvironment: env [
 		         self functionGetClassMethods.
 		         self functionGetClassSubclasses.
 		         self functionFindMethodsWithSubstring.
-		         self functionDescribePackage. "Refactoring tools"
-		         self functionRenameClass.
-		         self functionRenameClassesInPackage. "Package management tools"
-		         self functionCreatePackage. "Class management tools"
+		         self functionDescribePackage. 
+		
+		         self functionRenameClassesInPackage. 
+		         self functionCreatePackage. 
 		         self functionCreateClass.
 		         self functionRemoveClass.
 		         self functionRenameClass.
+				   self functionAddMethod.
+		         self functionRemoveMethod.
+		         self functionRenameMethod.
 
 		         self functionMoveClassToPackage.
 		         self functionAddInstanceVariable.
 		         self functionRemoveInstanceVariable.
-		         self functionSetClassComment. "Method management tools"
-		         self functionAddMethod.
-		         self functionRemoveMethod.
-		         self functionRenameMethod.
+		
+		         self functionSetClassComment.
+		   			self functionGetPackageComments.
+		         self functionSetPackageComment.
+		         self functionGetMethodComment.
+		         self functionSetMethodComment.
+		
 		         self functionMoveMethodToProtocol.
-
-		         ChatPharoClient toolCheckSyntax.
-		         ChatPharoClient toolCheckSyntax.
-		         ChatPharoClient toolOpenPlayground.
+		
 		         self functionGetSandboxStatus.
-		         self functionSandboxEvaluate.
+		         self functionSandboxEvaluate. 
 		
-		
-		 "Temporal tool management"
 		         self functionCreateTemporalTool.
 		         self functionDeleteTemporalTool.
 		         self functionDeleteAllTemporalTools.
-		         self functionListTemporalTools } asOrderedCollection.
+		         self functionListTemporalTools.
 		
-		 "Add skill tools if enabled and the Skills package is loaded"
+				   ChatPharoClient toolCheckSyntax.
+		         ChatPharoClient toolCheckSyntax.
+		         ChatPharoClient toolOpenPlayground.
+		
+		
+		} asOrderedCollection.
 	(Smalltalk hasClassNamed: #ChatPharoSkillEnvironment) ifTrue: [
 		tools addAll: (Smalltalk at: #ChatPharoSkillEnvironment) new tools ]
 ]

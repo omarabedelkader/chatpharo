@@ -31,11 +31,11 @@ ChatPharoPresenterTest >> tearDown [
 ]
 
 { #category : 'running' }
-ChatPharoPresenterTest >> testAddChatIncrementsNotebookPage [ 
+ChatPharoPresenterTest >> testAddChatIncrementsNotebookPage [
 
-    presenter addNewChat.
-    presenter addNewChat.
-    self assert: presenter notebook pages size equals: 2.
+	presenter addNewChat.
+	presenter addNewChat.
+	self assert: presenter notebook pages size equals: 3.
 ]
 
 { #category : 'running' }
@@ -48,10 +48,10 @@ ChatPharoPresenterTest >> testAddNewChat [
 ]
 
 { #category : 'running' }
-ChatPharoPresenterTest >> testAddNewChatAddsNotebookPage [ 
+ChatPharoPresenterTest >> testAddNewChatAddsNotebookPage [
 
-    presenter addNewChat.
-    self assert: (presenter notebook pages size) equals: 1
+	presenter addNewChat.
+	self assert: presenter notebook pages size equals: 2.
 ]
 
 { #category : 'running' }
@@ -91,11 +91,11 @@ ChatPharoPresenterTest >> testInitialization [
 ]
 
 { #category : 'running' }
-ChatPharoPresenterTest >> testInitializeWithoutAppIsSafe [ 
+ChatPharoPresenterTest >> testInitializeWithoutAppIsSafe [
 
-    | p |
-    p := ChatPharoPresenter new.
-    self shouldnt: [ p initializePresenters ] raise: Error.
+	| p |
+	p := ChatPharoPresenter new.
+	self shouldnt: [ p initializePresenters ] raise: Error.
 ]
 
 { #category : 'tests' }

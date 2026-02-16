@@ -148,6 +148,8 @@ ChatPharoOllamaSettingsPresenter >> initializePresenters [
 	super initializePresenters.
 
 	modelsDrop := SpDropListPresenter new.
+	modelsDrop whenSelectedItemChangedDo: [ :m | model model: m ].
+	
 	refreshButton := self newButton
 		                 label: 'Refresh';
 		                 icon: (self iconNamed: #refresh);
@@ -168,32 +170,27 @@ ChatPharoOllamaSettingsPresenter >> initializePresenters [
 		                    text: model temperature asString;
 		                    yourself.
 	suggestedModelsDrop := SpDropListPresenter new
-		items: (#('') , model class suggestedModels);
-		display: [ :name | name ifEmpty: [ '-- Select a model --' ] ifNotEmpty: [ name ] ];
-		whenSelectedItemChangedDo: [ :name |
-			name ifNotEmpty: [ installInput text: name ] ];
-		yourself.
-		
-	
+		                       items: #( '' ) , model class suggestedModels;
+		                       display: [ :name | name ifEmpty: [ '-- Select a model --' ] ifNotEmpty: [ name ] ];
+		                       whenSelectedItemChangedDo: [ :name | name ifNotEmpty: [ installInput text: name ] ];
+		                       yourself.
+
+
 	maxTokensInput := self newTextInput
 		                  placeholder: 'e.g. 1024';
-		                  text: (model maxTokens
-			                   ifNil: [ '' ]
-			                   ifNotNil: [ model maxTokens asString ]);
+		                  text: (model maxTokens ifNil: [ '' ] ifNotNil: [ model maxTokens asString ]);
 		                  yourself.
 
 	topPInput := self newTextInput
 		             placeholder: 'e.g. 0.9';
-		             text: (model topP
-			              ifNil: [ '' ]
-			              ifNotNil: [ model topP asString ]);
+		             text: (model topP ifNil: [ '' ] ifNotNil: [ model topP asString ]);
 		             yourself.
 
 	customParametersInput := self newTextInput
 		                         placeholder: '{"frequency_penalty":0.1}';
 		                         text: (model customParameters isEmpty
-			                          ifTrue: [ '' ]
-			                          ifFalse: [ STONJSON toString: model customParameters ]);
+				                          ifTrue: [ '' ]
+				                          ifFalse: [ STONJSON toString: model customParameters ]);
 		                         yourself.
 	installInput := self newTextInput
 		                placeholder: 'model name (e.g. codellama:7b)';
@@ -206,9 +203,7 @@ ChatPharoOllamaSettingsPresenter >> initializePresenters [
 				                 ChatPharoModelPullProgressPresenter
 					                 pullModel: installInput text
 					                 onComplete: [ self refreshModels ]
-					                 onError: [ :ex |
-						                 self inform: 'Error pulling model: ' , ex messageText ,
-							                 '. Please verify the model name.' ] ];
+					                 onError: [ :ex | self inform: 'Error pulling model: ' , ex messageText , '. Please verify the model name.' ] ];
 		                 yourself.
 	deleteButton := self newButton
 		                label: 'Delete';

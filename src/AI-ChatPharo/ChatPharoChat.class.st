@@ -448,10 +448,10 @@ ChatPharoChat >> sendMessage: aText [
 		                 [
 			                 | backend |
 			                 backend := self agent.
-			                 backend onToolExecution: [ self triggerToolExecution ]. "Build prefixes"
+			                backend onToolExecution: [ :toolName | self triggerToolExecution: toolName ].
 			                 promptWithMemory := self buildPromptPrefixWithMemoryFor: aText.
-			                
-backend promptPrefix: promptWithMemory.
+
+			                 backend promptPrefix: promptWithMemory.
 			                 answer := backend getResponseForPrompt: aText.
 			                 cache at: aText put: answer.
 			                 self addAssistantMessage: answer.
@@ -469,30 +469,28 @@ backend promptPrefix: promptWithMemory.
 ChatPharoChat >> sendMessage: aText withAttachments: attachmentCollection [
 
 	| answer multivers promptWithMemory textWithAttachments |
-	self addUserMessage: aText withAttachments: attachmentCollection.
-
-	"Build the message text including attachment information"
+	self addUserMessage: aText withAttachments: attachmentCollection. "Build the message text including attachment information"
 	textWithAttachments := aText.
 	attachmentCollection ifNotEmpty: [
-		textWithAttachments := String streamContents: [ :stream |
-			stream nextPutAll: aText.
-			stream cr; cr.
-			stream nextPutAll: 'Attached files:'.
-			stream cr.
-			attachmentCollection do: [ :fileRef |
-				stream nextPutAll: '- '.
-				stream nextPutAll: fileRef basename.
-				stream nextPutAll: ' ('.
-				stream nextPutAll: fileRef size asString.
-				stream nextPutAll: ' bytes)'.
-				stream cr.
-				"Optionally include file content for text files"
-				(fileRef mimeTypes anySatisfy: [ :mime | mime beginsWith: 'text/' ])
-					ifTrue: [
-						stream nextPutAll: '  Content: '.
-						stream cr.
-						stream nextPutAll: fileRef contents.
-						stream cr ] ] ] ].
+			textWithAttachments := String streamContents: [ :stream |
+					                       stream nextPutAll: aText.
+					                       stream
+						                       cr;
+						                       cr.
+					                       stream nextPutAll: 'Attached files:'.
+					                       stream cr.
+					                       attachmentCollection do: [ :fileRef |
+							                       stream nextPutAll: '- '.
+							                       stream nextPutAll: fileRef basename.
+							                       stream nextPutAll: ' ('.
+							                       stream nextPutAll: fileRef size asString.
+							                       stream nextPutAll: ' bytes)'.
+							                       stream cr. "Optionally include file content for text files"
+							                       (fileRef mimeTypes anySatisfy: [ :mime | mime beginsWith: 'text/' ]) ifTrue: [
+									                       stream nextPutAll: '  Content: '.
+									                       stream cr.
+									                       stream nextPutAll: fileRef contents.
+									                       stream cr ] ] ] ].
 
 	(cache includesKey: textWithAttachments) ifTrue: [
 			answer := cache at: textWithAttachments.
@@ -505,10 +503,10 @@ ChatPharoChat >> sendMessage: aText withAttachments: attachmentCollection [
 		                 [
 			                 | backend |
 			                 backend := self agent.
-			                 backend onToolExecution: [ self triggerToolExecution ]. "Build prefixes"
+			                backend onToolExecution: [ :toolName | self triggerToolExecution: toolName ].
 			                 promptWithMemory := self buildPromptPrefixWithMemoryFor: textWithAttachments.
 
-backend promptPrefix: promptWithMemory.
+			                 backend promptPrefix: promptWithMemory.
 			                 answer := backend getResponseForPrompt: textWithAttachments.
 			                 cache at: textWithAttachments put: answer.
 			                 self addAssistantMessage: answer.
@@ -593,9 +591,14 @@ ChatPharoChat >> summarizeConversationToMemory [
 ]
 
 { #category : 'running' }
-ChatPharoChat >> triggerToolExecution [ 
+ChatPharoChat >> triggerToolExecution [
 
-        onToolExecution ifNotNil: [ :blk | blk value ]
+	self triggerToolExecution: nil
+]
+
+{ #category : 'running' }
+ChatPharoChat >> triggerToolExecution: aToolName [
+	onToolExecution ifNotNil: [ :blk | blk cull: aToolName ]
 ]
 
 { #category : 'running' }

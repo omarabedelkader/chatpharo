@@ -123,7 +123,8 @@ ChatPharoGeminiSettingsPresenter >> initializePresenters [
 
 
 	modelDrop := SpDropListPresenter new.
-
+	modelDrop whenSelectedItemChangedDo: [ :m | model model: m ].
+	
 	self refreshModels.
 
 	hostField whenTextChangedDo: [ :t | model host: t ].
@@ -131,8 +132,6 @@ ChatPharoGeminiSettingsPresenter >> initializePresenters [
 	apiKeyField whenTextChangedDo: [ :t |
 			model apiKey: t.
 			self refreshModels ].
-
-	modelDrop whenSelectedItemChangedDo: [ :m | model model: m ].
 
 	temperatureInput := self newTextInput
 		                    placeholder: '0.0';
@@ -145,33 +144,26 @@ ChatPharoGeminiSettingsPresenter >> initializePresenters [
 				do: [ ^ self inform: 'Invalid temperature value' ].
 			(num < 0.0 or: [ num > 1.0 ]) ifTrue: [ ^ self inform: 'Temperature must be between 0.0 and 1.0' ].
 			model temperature: num ].
-		
-		maxTokensInput := self newTextInput
+
+	maxTokensInput := self newTextInput
 		                  placeholder: 'e.g. 1024';
-		                  text: (model maxTokens
-			                   ifNil: [ '' ]
-			                   ifNotNil: [ model maxTokens asString ]);
+		                  text: (model maxTokens ifNil: [ '' ] ifNotNil: [ model maxTokens asString ]);
 		                  yourself.
-	maxTokensInput whenTextChangedDo: [ :text |
-		self updateMaxTokensFrom: text ].
+	maxTokensInput whenTextChangedDo: [ :text | self updateMaxTokensFrom: text ].
 
 	topPInput := self newTextInput
 		             placeholder: 'e.g. 0.9';
-		             text: (model topP
-			              ifNil: [ '' ]
-			              ifNotNil: [ model topP asString ]);
+		             text: (model topP ifNil: [ '' ] ifNotNil: [ model topP asString ]);
 		             yourself.
-	topPInput whenTextChangedDo: [ :text |
-		self updateTopPFrom: text ].
+	topPInput whenTextChangedDo: [ :text | self updateTopPFrom: text ].
 
 	customParametersInput := self newTextInput
 		                         placeholder: '{"frequency_penalty":0.1}';
 		                         text: (model customParameters isEmpty
-			                          ifTrue: [ '' ]
-			                          ifFalse: [ STONJSON toString: model customParameters ]);
+				                          ifTrue: [ '' ]
+				                          ifFalse: [ STONJSON toString: model customParameters ]);
 		                         yourself.
-	customParametersInput whenTextChangedDo: [ :text |
-		self updateCustomParametersFrom: text ].
+	customParametersInput whenTextChangedDo: [ :text | self updateCustomParametersFrom: text ].
 
 	testButton := self newButton
 		              label: 'Test Connection';

@@ -182,29 +182,25 @@ ChatPharoTool >> apiKey: anObject [
 ChatPharoTool >> applyToolFunction: functionName arguments: arguments [
 
 	| temporalTool |
-	onToolExecution ifNotNil: [ :blk | blk value ].
-	tools ifNil: [
-		"Check temporal tools before giving up"
-		temporalTool := ChatPharoTemporalToolRegistry current toolNamed: functionName.
-		temporalTool ifNotNil: [
-			^ [ temporalTool applyTo: arguments ]
-				on: Error
-				do: [ :e | Dictionary with: 'error' -> e messageText ] ].
-		^ Dictionary with: 'error'
-			-> ('There is no function named "{1}"' format: { functionName }) ].
+	onToolExecution ifNotNil: [ :blk | blk cull: functionName ].
+	tools ifNil: [ "Check temporal tools before giving up"
+			temporalTool := ChatPharoTemporalToolRegistry current toolNamed: functionName.
+			temporalTool ifNotNil: [
+					^ [ temporalTool applyTo: arguments ]
+						  on: Error
+						  do: [ :e | Dictionary with: 'error' -> e messageText ] ].
+			^ Dictionary with: 'error' -> ('There is no function named "{1}"' format: { functionName }) ].
 	tools do: [ :tool |
-		tool name = functionName ifTrue: [
-			^ [ tool applyTo: arguments ]
-				on: Error
-				do: [ :e | Dictionary with: 'error' -> e messageText ] ] ].
-	"Fall back to temporal tool registry"
+			tool name = functionName ifTrue: [
+					^ [ tool applyTo: arguments ]
+						  on: Error
+						  do: [ :e | Dictionary with: 'error' -> e messageText ] ] ]. "Fall back to temporal tool registry"
 	temporalTool := ChatPharoTemporalToolRegistry current toolNamed: functionName.
 	temporalTool ifNotNil: [
-		^ [ temporalTool applyTo: arguments ]
-			on: Error
-			do: [ :e | Dictionary with: 'error' -> e messageText ] ].
-	^ Dictionary with: 'error'
-		-> ('There is no function named "{1}"' format: { functionName })
+			^ [ temporalTool applyTo: arguments ]
+				  on: Error
+				  do: [ :e | Dictionary with: 'error' -> e messageText ] ].
+	^ Dictionary with: 'error' -> ('There is no function named "{1}"' format: { functionName })
 ]
 
 { #category : 'accessing' }

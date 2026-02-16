@@ -11,7 +11,8 @@ Class {
 		'toolbar',
 		'connectionStatusLabel',
 		'multiversStatusLabel',
-		'disclaimerLabel'
+		'disclaimerLabel',
+		'chatCounter'
 	],
 	#category : 'AI-ChatPharo-Spec-Core',
 	#package : 'AI-ChatPharo-Spec',
@@ -20,18 +21,22 @@ Class {
 
 { #category : 'adding' }
 ChatPharoPresenter >> addNewChat [
-
 	| newPage chatName |
-	chatName := 'Chat ' , (notebook pages size + 1 ) asString.
+	chatCounter := chatCounter + 1.
+	chatName := 'Chat ' , chatCounter asString.
 	model newChat.
-	newPage := SpNotebookPage title: chatName icon: (self iconNamed: #announcement) provider: [ model chats last presenter ].
+	newPage := SpNotebookPage 
+		title: chatName 
+		icon: (self iconNamed: #announcement) 
+		provider: [ model chats last presenter ].
 	notebook addPage: newPage.
 	notebook selectPage: newPage.
 	ChatPharoLogger logFrontend: 'UI added new chat tab'
-            details: (Dictionary new
-                    at: 'title' put: chatName;
-                    at: 'totalTabs' put: notebook pages size;
-                    yourself)
+		details: (Dictionary new
+			at: 'title' put: chatName;
+			at: 'totalTabs' put: notebook pages size;
+			at: 'chatCounter' put: chatCounter;
+			yourself)
 ]
 
 { #category : 'layout' }
@@ -93,7 +98,8 @@ ChatPharoPresenter >> deleteSelectedChat [
 
 { #category : 'initialization' }
 ChatPharoPresenter >> initializePresenters [
-
+	chatCounter := 0.
+	
 	notebook := self newNotebook.
 	toolbar := self newToolbar.
 	disclaimerLabel := self newLabel
@@ -310,20 +316,20 @@ ChatPharoPresenter >> openTutorial [
 
 { #category : 'initialization' }
 ChatPharoPresenter >> saveCurrentChat [
-
-	| fileReference jsonData currentChat |
+	| fileReference jsonData currentChat defaultFilename |
 	notebook selectedPage ifNil: [
 		^ self inform: 'No chat selected.' ].
 	currentChat := notebook selectedPage presenterProvider value.
 	jsonData := currentChat exportAsJson.
-
+	
+	"Generate unique default filename using chat title and counter"
+	defaultFilename := (notebook selectedPage title copyReplaceAll: ' ' with: '_'), '.json'.
+	
 	fileReference := UIManager default
 		chooseForSaveFileReference: 'Save chat'
 		extensions: #( 'json' )
-		path: FileLocator home.
-
+		path: FileLocator home / defaultFilename.
 	fileReference ifNil: [ ^ self ].
-
 	[
 		fileReference writeStreamDo: [ :stream |
 			stream nextPutAll: jsonData ].

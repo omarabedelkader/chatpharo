@@ -16,10 +16,10 @@ Class {
 { #category : 'initialization' }
 ChatPharoBackendSpyAgent >> getResponseForPrompt: aPrompt [
 
-    toolExecutionBlock ifNotNil: [
-        toolExecutionInvoked := true.
-        toolExecutionBlock value ].
-    ^ response ifNil: [ 'spy-response' ]
+	toolExecutionBlock ifNotNil: [
+			toolExecutionInvoked := true.
+			toolExecutionBlock cull: 'spy-tool' ].
+	^ response ifNil: [ 'spy-response' ]
 ]
 
 { #category : 'initialization' }

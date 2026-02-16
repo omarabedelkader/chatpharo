@@ -91,31 +91,27 @@ ChatPharoClaudeSettingsPresenter >> initializePresenters [
 		             placeholder: 'api.anthropic.com';
 		             text: model host.
 
-		apiKeyField := self newTextInput
-							bePassword
+	apiKeyField := self newTextInput bePassword
 		               placeholder: 'API-KEY';
 		               text: (model apiKey isEmpty
 				                ifTrue: ''
-				                ifFalse:
-					                (String new: model apiKey size withAll: $*)).
+				                ifFalse: (String new: model apiKey size withAll: $*)).
 
 	modelDrop := SpDropListPresenter new.
+	modelDrop whenSelectedItemChangedDo: [ :m | model model: m ].
+	
 	self refreshModels.
 	hostField whenTextChangedDo: [ :t | model host: t ].
 	apiKeyField whenTextChangedDo: [ :t |
 			model apiKey: t.
 			self refreshModels ].
-
-	modelDrop whenSelectedItemChangedDo: [ :m | model model: m ].
-
+	
 	temperatureInput := self newTextInput
-		placeholder: '0.7 (leave empty for default)';
-		text: (model temperature ifNil: [''] ifNotNil: [model temperature asString]);
-		yourself.
+		                    placeholder: '0.7 (leave empty for default)';
+		                    text: (model temperature ifNil: [ '' ] ifNotNil: [ model temperature asString ]);
+		                    yourself.
 
-	temperatureInput whenTextChangedDo: [ :text |
-		self updateTemperatureFrom: text
-	].
+	temperatureInput whenTextChangedDo: [ :text | self updateTemperatureFrom: text ].
 
 	testButton := self newButton
 		              label: 'Test Connection';

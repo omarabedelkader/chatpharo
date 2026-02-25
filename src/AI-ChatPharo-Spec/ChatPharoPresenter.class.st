@@ -24,11 +24,11 @@ ChatPharoPresenter >> addNewChat [
 	| newPage chatName |
 	chatCounter := chatCounter + 1.
 	chatName := 'Chat ' , chatCounter asString.
-	model newChat.
+	model ifNotNil: [ model newChat ].
 	newPage := SpNotebookPage 
 		title: chatName 
 		icon: (self iconNamed: #announcement) 
-		provider: [ model chats last presenter ].
+		provider: [ model ifNotNil: [ model chats last presenter ] ifNil: [ nil ]  ].
 	notebook addPage: newPage.
 	notebook selectPage: newPage.
 	ChatPharoLogger logFrontend: 'UI added new chat tab'
@@ -382,7 +382,9 @@ ChatPharoPresenter >> updateConnectionStatus [
 ChatPharoPresenter >> updateConnectionStatusOnce [
 
 	| agent statusText |
-	agent := model activeAgent ifNil: [ model settings agent ].
+		agent := model
+		ifNotNil: [ model activeAgent ifNil: [ model settings agent ] ]
+		ifNil: [ ChatPharoSettings default agent ].
 
 	statusText := (agent notNil and: [ agent class isReachable ])
 		              ifTrue: [ 'Connected' ]

@@ -171,6 +171,37 @@ ChatPharoChatTest >> testHandlesManySequentialMessages [
 ]
 
 { #category : 'running' }
+ChatPharoChatTest >> testImportFromJsonSkipsConsecutiveDuplicateHistoryEntries [
+
+    | json |
+    json := STONJSON toString: {
+        (Dictionary new
+            at: 'role' put: 'user';
+            at: 'content' put: 'what is 2 + 2';
+            yourself).
+        (Dictionary new
+            at: 'role' put: 'user';
+            at: 'content' put: 'what is 2 + 2';
+            yourself).
+        (Dictionary new
+            at: 'role' put: 'assistant';
+            at: 'content' put: '2 + 2 = 4';
+            yourself).
+        (Dictionary new
+            at: 'role' put: 'assistant';
+            at: 'content' put: '2 + 2 = 4';
+            yourself)
+    } asArray.
+
+    chat importFromJson: json.
+
+    self assert: chat messages size equals: 1.
+    self assert: chat messages first content equals: 'what is 2 + 2'.
+    self assert: chat messages first answer equals: '2 + 2 = 4'.
+    self assert: chat historyMessages size equals: 2.
+]
+
+{ #category : 'running' }
 ChatPharoChatTest >> testManyChatsRemainIsolated [
 
 	| chats |

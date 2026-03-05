@@ -142,6 +142,7 @@ ChatPharoChatPresenter >> defaultLayout [
 	^ SpBoxLayout newVertical
 		  spacing: 10;
 		  add: scrollableMessages expand: true;
+		  add: attachedFilesPresenter expand: false;
 		  add: (SpBoxLayout newHorizontal
 				   spacing: 5;
 				   add: moreMenuButton withConstraints: [ :c |
